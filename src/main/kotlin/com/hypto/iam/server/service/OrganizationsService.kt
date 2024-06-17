@@ -225,7 +225,7 @@ class OrganizationsServiceImpl : KoinComponent, OrganizationsService {
                 userAuthRepo.create(
                     hrn = userHrn.toString(),
                     providerName = issuer,
-                    authMetadata = metadata?.toJsonB(),
+                    authMetadata = metadata?.let { AuthMetadata.toJsonB(it) },
                 )
 
                 return@wrap Pair(organization, token)

@@ -9,6 +9,7 @@ import com.hypto.iam.server.extensions.post
 import com.hypto.iam.server.models.GetDelegateTokenRequest
 import com.hypto.iam.server.models.GetTokenForSubOrgRequest
 import com.hypto.iam.server.models.TokenResponse
+import com.hypto.iam.server.security.AuthMetadata
 import com.hypto.iam.server.security.AuthenticationException
 import com.hypto.iam.server.security.OAuthUserPrincipal
 import com.hypto.iam.server.security.TokenType
@@ -127,7 +128,7 @@ suspend fun generateTokenOauth(
             userAuthRepo.create(
                 user.hrn,
                 principal.issuer,
-                principal.metadata?.toJsonB(),
+                principal.metadata?.let { AuthMetadata.toJsonB(it) },
             )
     }
     userAuth?.let { authProvider.authenticate(principal, it) }

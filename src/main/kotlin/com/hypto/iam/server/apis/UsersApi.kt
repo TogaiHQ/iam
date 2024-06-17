@@ -141,7 +141,7 @@ fun Route.createUsersApi() {
             userAuthRepo.create(
                 hrn = user.hrn,
                 providerName = issuer,
-                authMetadata = authMetadata?.toJsonB(),
+                authMetadata = authMetadata?.let { AuthMetadata.toJsonB(it) },
             )
         }
         val token = tokenService.generateJwtToken(ResourceHrn(user.hrn))
