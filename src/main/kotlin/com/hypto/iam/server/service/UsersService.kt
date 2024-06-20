@@ -34,6 +34,7 @@ import com.hypto.iam.server.models.User
 import com.hypto.iam.server.models.UserPaginatedResponse
 import com.hypto.iam.server.models.VerifyEmailRequest
 import com.hypto.iam.server.security.AuthenticationException
+import com.hypto.iam.server.security.AuthorizationException
 import com.hypto.iam.server.security.TokenCredential
 import com.hypto.iam.server.security.TokenType
 import com.hypto.iam.server.security.UserPrincipal
@@ -695,19 +696,30 @@ class UsersServiceImpl : KoinComponent, UsersService {
         val record =
             linkUsersRepo.getById(linkId)
                 ?: throw EntityNotFoundException("Invalid user link id")
-        require(record.leaderUserHrn == leaderUserHrn) {
-            "User doesn't have permission to switch"
-        }
-        return if (record.leaderUserHrn == principal.hrnStr) {
+
+        val obofHrn = principal.claims?.get(ON_BEHALF_CLAIM) as String?
+        /**
+         * Case1: OBOF is null
+         *      If current user is the leader user, he/she is authorized to switch
+         * Case2: OBOF is not null [Subordinate user is trying to switch back to leader or parent user]
+         *      Only if current user == subOrdinate user and obof == leader user
+         */
+        return if (obofHrn == null) {
+            if (record.leaderUserHrn != principal.hrnStr) {
+                throw AuthorizationException("User is not authorized for this switch-user")
+            }
             tokenService.generateJwtToken(
                 userHrn = ResourceHrn(record.subordinateUserHrn),
                 requesterHrn = principal.hrn,
                 userLinkId = linkId,
             )
         } else {
+            if (record.leaderUserHrn != obofHrn || record.subordinateUserHrn != principal.hrnStr) {
+                throw AuthorizationException("User is not authorized for this switch-user")
+            }
             tokenService.generateJwtToken(
                 userHrn = ResourceHrn(record.leaderUserHrn),
-                userLinkId = linkId
+                userLinkId = linkId,
             )
         }
     }

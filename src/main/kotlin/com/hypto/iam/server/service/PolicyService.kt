@@ -223,12 +223,16 @@ class PolicyServiceImpl : KoinComponent, PolicyService {
             when (it.key) {
                 USER_ID -> {
                     val userHrn =
-                        ResourceHrn(
-                            organizationId,
-                            templateVariables[SUB_ORGANIZATION_ID_KEY]?.let { escapeRegexMetaCharacters(it) },
-                            IamResources.USER,
-                            it.value,
-                        ).toString()
+                        if (hrnFactory.isValid(it.value)) {
+                            it.value
+                        } else {
+                            ResourceHrn(
+                                organizationId,
+                                templateVariables[SUB_ORGANIZATION_ID_KEY]?.let { escapeRegexMetaCharacters(it) },
+                                IamResources.USER,
+                                it.value,
+                            ).toString()
+                        }
                     userRepo.findByHrn(userHrn) ?: throw EntityNotFoundException("Unable to find user [$userHrn]")
                     templateVariablesMap[USER_HRN_KEY] = userHrn
                 }
