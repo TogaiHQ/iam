@@ -692,7 +692,6 @@ class UsersServiceImpl : KoinComponent, UsersService {
         principal: UserPrincipal,
         linkId: String,
     ): TokenResponse {
-        val leaderUserHrn = principal.claims?.get(ON_BEHALF_CLAIM) as String? ?: principal.hrnStr
         val record =
             linkUsersRepo.getById(linkId)
                 ?: throw EntityNotFoundException("Invalid user link id")
