@@ -55,6 +55,7 @@ jobs:
       - name: Push changes to iam-java-client
         shell: bash
         run: |
+          cd client
           git add .
           git commit -m "Update OpenApi spec"
           git push origin main
