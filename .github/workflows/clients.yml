@@ -51,18 +51,9 @@ jobs:
         working-directory: client
         run: |
           gradle --stacktrace --debug generateClient
-      - name: Push changes
-        uses: actions-js/push@v1.3
-        with:
-          github_token: ${{ secrets.GIT_CLONE_SSH_KEY }}
-          directory: client
-          message: "Update OpenApi spec"
-          repository: TogaiHQ/iam-java-client
-          branch: main
       - name: Push changes to iam-java-client
         shell: bash
         run: |
           git add .
           git commit -m "Update OpenApi spec"
           git push
-
