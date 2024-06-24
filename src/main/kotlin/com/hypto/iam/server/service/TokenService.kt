@@ -179,17 +179,15 @@ class TokenServiceImpl : KoinComponent, TokenService {
         // Get policy and custom craft JWT token
         val delegatePrincipal = request.principal?.let { hrnFactory.getHrn(it) } ?: requesterPrincipal.hrn
         val policy =
-            if (request.templateName != null) {
-                request.templateVariables?.get(USER_ID)?.let {
-                    require(it == delegatePrincipal.toString()) {
-                        "User Id in template variable doesn't match the user id of the delegate"
-                    }
+            if (!request.policyTemplateConfig.isNullOrEmpty()) {
+                val userIdSet = request.policyTemplateConfig.mapNotNullTo(mutableSetOf()) { it.templateVariables?.get(USER_ID) }
+                require(userIdSet.isEmpty() || (userIdSet.size == 1 && userIdSet.contains(delegatePrincipal.toString()))) {
+                    "User Id must be unique across template variables and must match the user id of the delegate"
                 }
                 policyService.getRawPolicyAndUserHrnFromTemplate(
                     organizationId = requesterPrincipal.organization,
                     policyName = policyHrn,
-                    templateName = request.templateName,
-                    templateVariables = request.templateVariables,
+                    templateNameAndVariables = request.policyTemplateConfig,
                     checkForDuplicates = false,
                 ).first.let {
                     PoliciesRecord(

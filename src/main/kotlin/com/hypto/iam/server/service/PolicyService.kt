@@ -23,6 +23,7 @@ import com.hypto.iam.server.models.CreatePolicyFromTemplateRequest
 import com.hypto.iam.server.models.Policy
 import com.hypto.iam.server.models.PolicyPaginatedResponse
 import com.hypto.iam.server.models.PolicyStatement
+import com.hypto.iam.server.models.TemplateNameAndVariables
 import com.hypto.iam.server.models.UpdatePolicyRequest
 import com.hypto.iam.server.utils.IamResources
 import com.hypto.iam.server.utils.IamResources.POLICY
@@ -176,27 +177,17 @@ class PolicyServiceImpl : KoinComponent, PolicyService {
         return PolicyPaginatedResponse(policies.map { Policy.from(it) }, newContext.nextToken, newContext.toOptions())
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     override suspend fun getRawPolicyAndUserHrnFromTemplate(
         organizationId: String,
         policyName: String,
-        templateName: String,
-        templateVariables: Map<String, String>?,
+        templateNameAndVariables: List<TemplateNameAndVariables>,
         checkForDuplicates: Boolean,
     ): Pair<RawPolicyPayload, String?> {
-        val policyTemplate =
-            policyTemplatesRepo.fetchActivePolicyByName(templateName)
-                ?: throw EntityNotFoundException("Policy Template [$templateName] not found")
-        if (policyTemplate.isRootPolicy == true) {
-            throw BadRequestException("Can't create policies from root policies")
-        }
-        val policyTemplateVariables = policyTemplate.requiredVariables.asList()
-        val requestTemplateVariables = templateVariables?.keys ?: emptySet()
-        if (policyTemplateVariables.isNotEmpty()) {
-            require(policyTemplateVariables.size == requestTemplateVariables.size && policyTemplateVariables.containsAll(requestTemplateVariables)) {
-                "Some template variables are missing. Required variables $policyTemplateVariables"
-            }
-        }
+        val stringBuilder = StringBuilder()
+        var userHrn: String? = null
+        var description: String? = null
+
 //        Not adding subOrg in policyHrn as it is an entity of an organization
         val policyHrn =
             if (hrnFactory.isValid(policyName)) {
@@ -212,43 +203,64 @@ class PolicyServiceImpl : KoinComponent, PolicyService {
             throw EntityAlreadyExistsException("Policy with name [$policyName] already exists")
         }
 
-        val template =
-            try {
-                Template.parse(policyTemplate.statements)
-            } catch (e: MustacheParserException) {
-                throw IllegalStateException("Invalid template $templateName - ${e.localizedMessage}", e)
-            }
-        val templateVariablesMap = mutableMapOf<String, String>()
-        templateVariables?.forEach {
-            when (it.key) {
-                USER_ID -> {
-                    val userHrn =
-                        if (hrnFactory.isValid(it.value)) {
-                            it.value
-                        } else {
-                            ResourceHrn(
-                                organizationId,
-                                templateVariables[SUB_ORGANIZATION_ID_KEY]?.let { escapeRegexMetaCharacters(it) },
-                                IamResources.USER,
-                                it.value,
-                            ).toString()
-                        }
-                    userRepo.findByHrn(userHrn) ?: throw EntityNotFoundException("Unable to find user [$userHrn]")
-                    templateVariablesMap[USER_HRN_KEY] = userHrn
-                }
-                else -> templateVariablesMap[it.key] = escapeRegexMetaCharacters(it.value)
-            }
-        }
-        templateVariablesMap[ORGANIZATION_ID_KEY] = organizationId
-        templateVariablesMap[POLICY_NAME] = policyName
+        val policyTemplates =
+            policyTemplatesRepo.fetchActivePolicyTemplateByNames(templateNameAndVariables.map { it.templateName })
 
+        templateNameAndVariables.forEach { (templateName, templateVariables) ->
+            val policyTemplate =
+                policyTemplates[templateName]
+                    ?: throw EntityNotFoundException("Policy Template [$templateName] not found")
+            if (policyTemplate.isRootPolicy == true) {
+                throw BadRequestException("Can't create policies from root policies")
+            }
+            description = policyTemplate.description
+            val policyTemplateVariables = policyTemplate.requiredVariables.asList()
+            val requestTemplateVariables = templateVariables?.keys ?: emptySet()
+            if (policyTemplateVariables.isNotEmpty()) {
+                require(policyTemplateVariables.size == requestTemplateVariables.size && policyTemplateVariables.containsAll(requestTemplateVariables)) {
+                    "Some template variables are missing. Required variables $policyTemplateVariables"
+                }
+            }
+            val template =
+                try {
+                    Template.parse(policyTemplate.statements)
+                } catch (e: MustacheParserException) {
+                    throw IllegalStateException("Invalid template $templateName - ${e.localizedMessage}", e)
+                }
+            val templateVariablesMap = mutableMapOf<String, String>()
+            templateVariables?.forEach {
+                when (it.key) {
+                    USER_ID -> {
+                        val hrn =
+                            if (hrnFactory.isValid(it.value)) {
+                                it.value
+                            } else {
+                                ResourceHrn(
+                                    organizationId,
+                                    templateVariables[SUB_ORGANIZATION_ID_KEY]?.let { escapeRegexMetaCharacters(it) },
+                                    IamResources.USER,
+                                    it.value,
+                                ).toString()
+                            }
+                        userRepo.findByHrn(hrn) ?: throw EntityNotFoundException("Unable to find user [$hrn]")
+                        templateVariablesMap[USER_HRN_KEY] = hrn
+                        userHrn = hrn
+                    }
+                    else -> templateVariablesMap[it.key] = escapeRegexMetaCharacters(it.value)
+                }
+            }
+            templateVariablesMap[ORGANIZATION_ID_KEY] = organizationId
+            templateVariablesMap[POLICY_NAME] = policyName
+            stringBuilder.append(template.processToString(templateVariablesMap))
+            stringBuilder.appendLine()
+        }
         return Pair(
             RawPolicyPayload(
                 hrn = policyHrn,
-                description = policyTemplate.description,
-                statements = template.processToString(templateVariablesMap),
+                description = description,
+                statements = stringBuilder.toString().trim(),
             ),
-            templateVariablesMap[USER_HRN_KEY],
+            userHrn,
         )
     }
 
@@ -260,8 +272,7 @@ class PolicyServiceImpl : KoinComponent, PolicyService {
             getRawPolicyAndUserHrnFromTemplate(
                 organizationId = organizationId,
                 policyName = request.name,
-                templateName = request.templateName,
-                templateVariables = request.templateVariables,
+                templateNameAndVariables = listOf(TemplateNameAndVariables(request.templateName, request.templateVariables)),
                 checkForDuplicates = true,
             )
         val principalPoliciesRecord =
@@ -326,8 +337,7 @@ interface PolicyService {
     suspend fun getRawPolicyAndUserHrnFromTemplate(
         organizationId: String,
         policyName: String,
-        templateName: String,
-        templateVariables: Map<String, String>?,
+        templateNameAndVariables: List<TemplateNameAndVariables>,
         checkForDuplicates: Boolean = true,
     ): Pair<RawPolicyPayload, String?>
 
