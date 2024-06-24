@@ -30,12 +30,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: iam
+          ssh-key: ${{ secrets.GIT_CLONE_SSH_KEY }}
       - name: Checkout
         uses: actions/checkout@v3
         with:
           repository: togaihq/iam-java-client
           path: client
-          persist-credentials: false
+          ssh-key: ${{ secrets.GIT_CLONE_SSH_KEY }}
+          persist-credentials: true
           fetch-depth: 0
       - name: Move the spec file
         run: |
@@ -57,4 +59,10 @@ jobs:
           message: "Update OpenApi spec"
           repository: TogaiHQ/iam-java-client
           branch: main
+      - name: Push changes to iam-java-client
+        shell: bash
+        run: |
+          git add .
+          git commit -m "Update OpenApi spec"
+          git push
 
