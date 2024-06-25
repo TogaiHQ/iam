@@ -78,5 +78,9 @@
       "iam_client_id": "<placeholder for IAM client id>"
     },
     "identitySource": "AWS_COGNITO"
+  },
+  "workOS": {
+    "secret_key": "<placeholder for workOS secret key>",
+    "client_id": "<placeholder for workOS client id>"
   }
 }

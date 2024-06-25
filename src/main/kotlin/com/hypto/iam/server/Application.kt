@@ -18,6 +18,7 @@ import com.hypto.iam.server.apis.passcodeApis
 import com.hypto.iam.server.apis.policyApi
 import com.hypto.iam.server.apis.resetPasswordApi
 import com.hypto.iam.server.apis.resourceApi
+import com.hypto.iam.server.apis.ssoLoginApi
 import com.hypto.iam.server.apis.subOrganizationsApi
 import com.hypto.iam.server.apis.tokenApi
 import com.hypto.iam.server.apis.userAuthApi
@@ -164,6 +165,7 @@ fun Application.handleRequest() {
         loginApi()
         keyApi()
         authProviderApi()
+        ssoLoginApi()
 
         authenticate("optional-bearer-auth") {
             createPasscodeApi()

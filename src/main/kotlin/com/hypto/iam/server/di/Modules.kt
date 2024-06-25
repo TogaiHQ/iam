@@ -44,6 +44,8 @@ import com.hypto.iam.server.service.PrincipalPolicyService
 import com.hypto.iam.server.service.PrincipalPolicyServiceImpl
 import com.hypto.iam.server.service.ResourceService
 import com.hypto.iam.server.service.ResourceServiceImpl
+import com.hypto.iam.server.service.SsoLoginService
+import com.hypto.iam.server.service.SsoLoginServiceImpl
 import com.hypto.iam.server.service.SubOrganizationService
 import com.hypto.iam.server.service.SubOrganizationServiceImpl
 import com.hypto.iam.server.service.TokenService
@@ -115,6 +117,7 @@ val controllerModule =
         single { CredentialServiceImpl() } bind CredentialService::class
         single { PolicyServiceImpl() } bind PolicyService::class
         single { ValidationServiceImpl() } bind ValidationService::class
+        single { SsoLoginServiceImpl() } bind SsoLoginService::class
         single { PrincipalPolicyServiceImpl() } bind PrincipalPolicyService::class
         single { ResourceServiceImpl() } bind ResourceService::class
         single { ActionServiceImpl() } bind ActionService::class
