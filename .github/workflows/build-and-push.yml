@@ -115,6 +115,10 @@ jobs:
           else
             echo "$FILE not found. Assuming there are no components to run"
           fi
+      - name: Kill gradle daemons
+        shell: bash
+        run: |
+          pkill -f '.*GradleDaemon.*'
 
       - name: Build with Gradle
         if: ${{ steps.get-count-ecr-sha-tag-image.outputs.count == 0 }}
