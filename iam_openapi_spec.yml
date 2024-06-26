@@ -4681,11 +4681,9 @@ components:
         domain:
           description: Domain of the user's organization
           type: string
-          maxLength: 320
         redirectUri:
           description: callback url for generating authentication url
           type: string
-          maxLength: 320
 
 externalDocs:
   description: Find out more about IAM

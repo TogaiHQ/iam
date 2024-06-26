@@ -64,6 +64,7 @@ import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IdGenerator
 import com.hypto.iam.server.utils.policy.PolicyValidator
 import com.txman.TxMan
+import com.workos.WorkOS
 import mu.KotlinLogging
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
@@ -170,6 +171,7 @@ val applicationModule =
         }
         single(named("AuthProvider")) { get<OkHttpClient.Builder>().build() }
         single { AuthProviderRegistry }
+        single { WorkOS(get<AppConfig>().workOS.secretKey) }
     }
 
 fun getCognitoIdentityProviderClient(

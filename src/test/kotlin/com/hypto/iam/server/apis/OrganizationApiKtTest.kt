@@ -4,6 +4,7 @@ import com.hypto.iam.server.Constants
 import com.hypto.iam.server.ROOT_ORG
 import com.hypto.iam.server.authProviders.GoogleAuthProvider
 import com.hypto.iam.server.authProviders.MicrosoftAuthProvider
+import com.hypto.iam.server.authProviders.WorkOSAuthProvider
 import com.hypto.iam.server.db.repositories.OrganizationRepo
 import com.hypto.iam.server.db.repositories.PasscodeRepo
 import com.hypto.iam.server.db.tables.pojos.Organizations
@@ -396,6 +397,55 @@ internal class OrganizationApiKtTest : BaseSingleAppTest() {
 
             // Assert
             assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
+    }
+
+    @Test
+    fun `create organization using sso authorization - success`() {
+        testSuspend {
+            // Arrange
+            val code = "test-workos-code"
+            val name = "test-name"
+            val email = "test-email"
+            val companyName = "test-company"
+
+            mockkObject(WorkOSAuthProvider)
+            coEvery {
+                WorkOSAuthProvider.getProfileDetails(any())
+            } coAnswers {
+                OAuthUserPrincipal(
+                    tokenCredential = TokenCredential(code, TokenType.OAUTH),
+                    companyName = companyName,
+                    name = name,
+                    email = email,
+                    organization = ROOT_ORG,
+                    issuer = "workos",
+                    metadata = AuthMetadata(id = UUID.randomUUID().toString()),
+                )
+            }
+
+            // Act
+            val response =
+                testApp.client.post("/organizations") {
+                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    header("x-issuer", "workos")
+                    header(HttpHeaders.Authorization, "Bearer $code")
+                }
+
+            // Assert
+            assertEquals(HttpStatusCode.Created, response.status)
+            assertEquals(
+                ContentType.Application.Json,
+                response.contentType(),
+            )
+            val responseBody = gson.fromJson(response.bodyAsText(), CreateOrganizationResponse::class.java)
+            assertEquals(companyName, responseBody.organization.name)
+            assertEquals(name, responseBody.organization.rootUser.name)
+            assertEquals(email, responseBody.organization.rootUser.email)
+
+            // Cleanup
+            val orgId = responseBody.organization.id
+            testApp.deleteOrganization(orgId)
         }
     }
 

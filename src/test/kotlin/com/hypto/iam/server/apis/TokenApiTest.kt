@@ -5,6 +5,7 @@ import com.hypto.iam.server.Constants
 import com.hypto.iam.server.ROOT_ORG
 import com.hypto.iam.server.authProviders.GoogleAuthProvider
 import com.hypto.iam.server.authProviders.MicrosoftAuthProvider
+import com.hypto.iam.server.authProviders.WorkOSAuthProvider
 import com.hypto.iam.server.configs.AppConfig
 import com.hypto.iam.server.db.repositories.MasterKeysRepo
 import com.hypto.iam.server.helpers.AbstractContainerBaseTest
@@ -1817,6 +1818,53 @@ class TokenApiTest : AbstractContainerBaseTest() {
 
                 // Assert
                 Assertions.assertEquals(HttpStatusCode.Unauthorized, response.status)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Login with SSO")
+    inner class LoginWithSSO {
+        @Test
+        fun `Login with sso without adding userAuth access method - success`() {
+            testApplication {
+                // Arrange
+                environment {
+                    config = ApplicationConfig("application-custom.conf")
+                }
+                val (createdOrganization, createdUser) = createOrganization()
+                val code = "workos-code"
+
+                mockkObject(WorkOSAuthProvider)
+                coEvery {
+                    WorkOSAuthProvider.getProfileDetails(any())
+                } coAnswers {
+                    OAuthUserPrincipal(
+                        tokenCredential = TokenCredential(code, TokenType.OAUTH),
+                        companyName = createdOrganization.organization.name,
+                        name = createdUser.name ?: "",
+                        email = createdUser.email,
+                        organization = ROOT_ORG,
+                        issuer = "google",
+                    )
+                }
+
+                // Act
+                val response =
+                    client.post("/login") {
+                        header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        header("x-issuer", "workos")
+                        header(HttpHeaders.Authorization, "Bearer $code")
+                    }
+
+                // Assert
+                Assertions.assertEquals(HttpStatusCode.OK, response.status)
+                Assertions.assertEquals(
+                    ContentType.Application.Json,
+                    response.contentType(),
+                )
+                val responseBody = gson.fromJson(response.bodyAsText(), TokenResponse::class.java)
+                Assertions.assertNotNull(responseBody.token)
             }
         }
     }
