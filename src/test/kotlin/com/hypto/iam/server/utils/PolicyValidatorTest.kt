@@ -8,10 +8,9 @@ import com.hypto.iam.server.utils.policy.PolicyRequest
 import com.hypto.iam.server.utils.policy.PolicyValidator
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.koin.test.inject
 
 class PolicyValidatorTest : AbstractContainerBaseTest() {
-    val policyValidator: PolicyValidator by inject()
+    private val policyValidator = PolicyValidator()
 
     @Test
     fun `Test policy- allow and deny for same permission, outcome- deny`() {

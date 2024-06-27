@@ -36,7 +36,7 @@ private val tokenService: TokenService = getKoinInstance()
 private val gson: Gson = getKoinInstance()
 private val userRepo = getKoinInstance<UserRepo>()
 private val userAuthRepo = getKoinInstance<UserAuthRepo>()
-private val policyValidator = getKoinInstance<PolicyValidator>()
+private val policyValidator = PolicyValidator()
 
 @Suppress("ThrowsCount")
 suspend fun generateToken(

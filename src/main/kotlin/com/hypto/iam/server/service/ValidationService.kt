@@ -13,7 +13,7 @@ import org.koin.core.component.inject
 
 class ValidationServiceImpl : ValidationService, KoinComponent {
     private val principalPolicyService: PrincipalPolicyService by inject()
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidator = PolicyValidator()
 
     override suspend fun validateIfUserHasPermissionToActions(
         principalHrn: Hrn,
