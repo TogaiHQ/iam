@@ -6,6 +6,7 @@ object AuthProviderRegistry {
     init {
         registerProvider(GoogleAuthProvider)
         registerProvider(MicrosoftAuthProvider)
+        registerProvider(WorkOSAuthProvider)
     }
 
     fun getProvider(providerName: String) = providerRegistry[providerName]

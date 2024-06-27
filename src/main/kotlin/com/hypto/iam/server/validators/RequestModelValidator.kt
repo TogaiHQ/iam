@@ -34,6 +34,7 @@ import com.hypto.iam.server.models.ResendInviteRequest
 import com.hypto.iam.server.models.ResetPasswordRequest
 import com.hypto.iam.server.models.ResourceAction
 import com.hypto.iam.server.models.RootUser
+import com.hypto.iam.server.models.SsoLoginRequest
 import com.hypto.iam.server.models.TemplateNameAndVariables
 import com.hypto.iam.server.models.TokenCredentialConfig
 import com.hypto.iam.server.models.UpdateActionRequest
@@ -219,6 +220,10 @@ fun GetDelegateTokenRequest.validate(): GetDelegateTokenRequest {
 
 fun GetTokenForSubOrgRequest.validate(): GetTokenForSubOrgRequest {
     return getTokenForSubOrgRequest.validateAndThrowOnFailure(this)
+}
+
+fun SsoLoginRequest.validate(): SsoLoginRequest {
+    return ssoLoginRequest.validateAndThrowOnFailure(this)
 }
 
 fun LinkUserRequest.validate(): LinkUserRequest {
@@ -622,6 +627,12 @@ val getTokenForSubOrgRequest =
         GetTokenForSubOrgRequest::expiry ifPresent {
             minimum(1)
         }
+    }
+
+val ssoLoginRequest =
+    Validation {
+        SsoLoginRequest::domain required {}
+        SsoLoginRequest::redirectUri required {}
     }
 
 @Suppress("MagicNumber")

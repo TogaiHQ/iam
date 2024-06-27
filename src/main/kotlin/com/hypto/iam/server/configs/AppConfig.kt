@@ -14,6 +14,7 @@ data class AppConfig(
     val postHook: PostHook,
     val onboardRoutes: OnboardRoutes,
     val cognito: IdentityGroup,
+    val workOS: WorkOS,
 ) {
     /**
      * Environment variables should be in Snake case.
@@ -116,6 +117,8 @@ data class AppConfig(
     data class PostHook(val signup: String)
 
     data class OnboardRoutes(val signup: String, val reset: String, val invite: String, val linkUser: String)
+
+    data class WorkOS(val secretKey: String, val clientId: String)
 
     companion object {
         val configuration: AppConfig =

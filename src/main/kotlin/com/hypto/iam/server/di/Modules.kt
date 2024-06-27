@@ -44,6 +44,8 @@ import com.hypto.iam.server.service.PrincipalPolicyService
 import com.hypto.iam.server.service.PrincipalPolicyServiceImpl
 import com.hypto.iam.server.service.ResourceService
 import com.hypto.iam.server.service.ResourceServiceImpl
+import com.hypto.iam.server.service.SsoLoginService
+import com.hypto.iam.server.service.SsoLoginServiceImpl
 import com.hypto.iam.server.service.SubOrganizationService
 import com.hypto.iam.server.service.SubOrganizationServiceImpl
 import com.hypto.iam.server.service.TokenService
@@ -62,6 +64,7 @@ import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IdGenerator
 import com.hypto.iam.server.utils.policy.PolicyValidator
 import com.txman.TxMan
+import com.workos.WorkOS
 import mu.KotlinLogging
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
@@ -115,6 +118,7 @@ val controllerModule =
         single { CredentialServiceImpl() } bind CredentialService::class
         single { PolicyServiceImpl() } bind PolicyService::class
         single { ValidationServiceImpl() } bind ValidationService::class
+        single { SsoLoginServiceImpl() } bind SsoLoginService::class
         single { PrincipalPolicyServiceImpl() } bind PrincipalPolicyService::class
         single { ResourceServiceImpl() } bind ResourceService::class
         single { ActionServiceImpl() } bind ActionService::class
@@ -167,6 +171,7 @@ val applicationModule =
         }
         single(named("AuthProvider")) { get<OkHttpClient.Builder>().build() }
         single { AuthProviderRegistry }
+        single { WorkOS(get<AppConfig>().workOS.secretKey) }
     }
 
 fun getCognitoIdentityProviderClient(

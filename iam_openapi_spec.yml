@@ -1963,6 +1963,30 @@ paths:
         default:
           $ref: '#/components/responses/ErrorResponse'
 
+  /sso_login:
+    post:
+      tags:
+        - User Authorization
+      summary: Generate authentication url for the given domain
+      description: Generate authentication url for the user given domain during signup
+      operationId: ssoLogin
+      requestBody:
+        $ref: '#/components/requestBodies/SsoLoginRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthUrlResponse'
+        '401':
+          $ref: '#/components/responses/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/ErrorResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+
   #Invites
   /verifyEmail:
     post:
@@ -2532,6 +2556,17 @@ components:
             GetTokenForSubOrgRequest:
               $ref: '#/components/examples/GetTokenForSubOrgRequest'
 
+    SsoLoginRequest:
+      description: Payload to generate a token for sub organization user
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SsoLoginRequest'
+          examples:
+            SsoLoginRequest:
+              $ref: '#/components/examples/SsoLoginRequest'
+
   responses:
     BaseSuccessResponse:
       description: OK
@@ -2834,6 +2869,16 @@ components:
           schema:
             type: string
           example: XlK5h64gNDBfMXAPKKGRmWjaxmXJJzDKIJNWqSWj
+
+    AuthUrlResponse:
+      description: Authentication url for the domain
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthUrlResponse'
+          examples:
+            AuthUrlResponse:
+              $ref: '#/components/examples/AuthUrlResponse'
 
     ValidationResponse:
       description: Response for validation request
@@ -3233,6 +3278,10 @@ components:
       value:
         token: XlK5h64gNDBfMXAPKKGRmWjaxmXJJzDKIJNWqSWj
 
+    AuthUrlResponse:
+      value:
+        url: https://www.example.com
+
     ValidationResponse:
       value:
         results:
@@ -3466,6 +3515,12 @@ components:
       summary: A sample GetTokenForSubOrgRequest
       value:
         email: email@email.com
+
+    SsoLoginRequest:
+      summary: A sample SsoLoginRequest
+      value:
+        domain: email.com
+        redirectUri: https://staging-dashboard.togai.dev/login
 
   schemas:
     # Requests
@@ -3983,6 +4038,15 @@ components:
         - token
       properties:
         token:
+          type: string
+
+    AuthUrlResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - url
+      properties:
+        url:
           type: string
 
     ValidationResponse:
@@ -4606,6 +4670,20 @@ components:
           description: |
             Expiry in seconds from the time of generation. If not provided, the token will have the expiry of 24 hours
           type: integer
+
+    SsoLoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - domain
+        - redirectUri
+      properties:
+        domain:
+          description: Domain of the user's organization
+          type: string
+        redirectUri:
+          description: callback url for generating authentication url
+          type: string
 
 externalDocs:
   description: Find out more about IAM
