@@ -2,18 +2,19 @@ package com.hypto.iam.server.service
 
 import com.hypto.iam.server.configs.AppConfig
 import com.hypto.iam.server.exceptions.EntityNotFoundException
-import com.hypto.iam.server.exceptions.UnknownException
 import com.hypto.iam.server.models.AuthUrlResponse
 import com.hypto.iam.server.models.SsoLoginRequest
 import com.hypto.iam.server.security.AuthenticationException
 import com.workos.WorkOS
-import com.workos.common.exceptions.BadRequestException
-import com.workos.common.exceptions.NotFoundException
-import com.workos.common.exceptions.UnauthorizedException
 import com.workos.organizations.OrganizationsApi
+import io.ktor.server.plugins.BadRequestException
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.util.UUID
+import com.workos.common.exceptions.BadRequestException as WorkOSBadRequestException
+import com.workos.common.exceptions.NotFoundException as WorkOSNotFoundException
+import com.workos.common.exceptions.UnauthorizedException as WorkOSUnauthorizedException
 
 private val logger = KotlinLogging.logger {}
 
@@ -23,11 +24,10 @@ class SsoLoginServiceImpl : SsoLoginService, KoinComponent {
 
     companion object {
         private const val WORKOS_STATE = "workos"
-        private const val UNKNOWN_ERROR = "Unknown error occurred"
         private const val ENTITY_NOT_FOUND = "Entity not found"
     }
 
-    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    @Suppress("SwallowedException")
     override suspend fun getAuthUrlForDomain(
         ssoLoginRequest: SsoLoginRequest,
     ): AuthUrlResponse {
@@ -35,26 +35,20 @@ class SsoLoginServiceImpl : SsoLoginService, KoinComponent {
             val domains = listOf(ssoLoginRequest.domain)
             val options = OrganizationsApi.ListOrganizationsOptions.builder().domains(domains).build()
             val organizations = workos.organizations.listOrganizations(options)
-            require(organizations.data.isNotEmpty()) {
-                "SSO not configured for ${ssoLoginRequest.domain}. Please contact administrator."
+            if (organizations.data.isEmpty()) {
+                throw WorkOSBadRequestException("SSO not configured for ${ssoLoginRequest.domain}. Please contact administrator.", null, null, UUID.randomUUID().toString())
             }
             val url = workos.sso.getAuthorizationUrl(appConfig.workOS.clientId, ssoLoginRequest.redirectUri).organization(organizations.data[0].id).state(WORKOS_STATE).build()
             AuthUrlResponse(url)
-        } catch (e: UnauthorizedException) {
+        } catch (e: WorkOSUnauthorizedException) {
             logger.error { "Unauthorized - ${e.message}" }
             throw AuthenticationException(e.message ?: "Unauthorized")
-        } catch (e: BadRequestException) {
+        } catch (e: WorkOSBadRequestException) {
             logger.error { "Bad request - ${e.message}" }
-            throw io.ktor.server.plugins.BadRequestException("Error while getting authentication URL from WorkOS")
-        } catch (e: NotFoundException) {
+            throw BadRequestException("Error while getting authentication URL from WorkOS")
+        } catch (e: WorkOSNotFoundException) {
             logger.error { "$ENTITY_NOT_FOUND - ${e.message}" }
             throw EntityNotFoundException(ENTITY_NOT_FOUND)
-        } catch (e: IllegalArgumentException) {
-            logger.error { e.message ?: "Illegal argument received" }
-            throw IllegalArgumentException(e.message ?: "Illegal argument received")
-        } catch (e: Exception) {
-            logger.error { "$UNKNOWN_ERROR - ${e.message}" }
-            throw UnknownException(UNKNOWN_ERROR)
         }
     }
 }
