@@ -78,7 +78,7 @@ class TokenServiceImpl : KoinComponent, TokenService {
     private val principalPolicyService: PrincipalPolicyService by inject()
     private val appConfig: AppConfig by inject()
     private val masterKeyCache: MasterKeyCache by inject()
-    private val policyValidator = PolicyValidator()
+    private val policyValidator: PolicyValidator by inject()
     private val policiesRepo: PoliciesRepo by inject()
     private val policyService: PolicyService by inject()
 

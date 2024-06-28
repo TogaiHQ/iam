@@ -23,6 +23,7 @@ import io.ktor.util.AttributeKey
 import io.ktor.util.pipeline.PipelinePhase
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 // Authorization logic is defined based on - https://www.ximedes.com/2020-09-17/role-based-authorization-in-ktor/
 
@@ -51,6 +52,8 @@ class AuthorizationException(override val message: String) : Exception(message)
 
 @Suppress("UnusedPrivateMember")
 class Authorization(config: Configuration) : KoinComponent {
+    private val policyValidator: PolicyValidator by inject()
+
     class Configuration : KoinComponent
 
     @Suppress("ThrowsCount", "CyclomaticComplexMethod")
@@ -109,7 +112,7 @@ class Authorization(config: Configuration) : KoinComponent {
                         val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
                         PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
                     }.toList()
-                if (!PolicyValidator().validate(policies.stream(), policyRequests)) {
+                if (!policyValidator.validate(policies.stream(), policyRequests)) {
                     denyReasons += "Principal $principalHrn lacks one or more permission(s) -" +
                         "  ${policyRequests.joinToString { it.action }}"
                 }
@@ -121,7 +124,7 @@ class Authorization(config: Configuration) : KoinComponent {
                         val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
                         PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
                     }.toList()
-                if (!PolicyValidator().validateAny(policies.stream(), policyRequests)) {
+                if (!policyValidator.validateAny(policies.stream(), policyRequests)) {
                     denyReasons += "Principal $principalHrn has none of the permission(s) -" +
                         "  ${policyRequests.joinToString { it.action }}"
                 }
@@ -133,7 +136,7 @@ class Authorization(config: Configuration) : KoinComponent {
                         val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
                         PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
                     }.toList()
-                if (!PolicyValidator().validateNone(policies.stream(), policyRequests)) {
+                if (!policyValidator.validateNone(policies.stream(), policyRequests)) {
                     denyReasons += "Principal $principalHrn shouldn't have these permission(s) -" +
                         "  ${policyRequests.joinToString { it.action }}"
                 }
