@@ -77,13 +77,16 @@ object UserRepo : BaseRepo<UsersRecord, Users, String>() {
         builder =
             if (uniqueCheck) {
                 // Check only verified users in other organizations and all users within the organization
-                builder.and(
-                    (
-                        USERS.VERIFIED.eq(true)
-                            .andNot(USERS.ORGANIZATION_ID.eq(organizationId))
-                    )
-                        .or(USERS.ORGANIZATION_ID.eq(organizationId)),
-                )
+                if (subOrganizationName == null) {
+                    builder
+                        .and(
+                            USERS.VERIFIED.eq(true)
+                                .or(USERS.ORGANIZATION_ID.eq(organizationId)),
+                        )
+                        .and(USERS.SUB_ORGANIZATION_NAME.isNull)
+                } else {
+                    builder.and(USERS.SUB_ORGANIZATION_NAME.eq(subOrganizationName).and(USERS.ORGANIZATION_ID.eq(organizationId)))
+                }
             } else {
                 // Check all verified and unverified users within the organization
                 builder.and(USERS.ORGANIZATION_ID.eq(organizationId))
