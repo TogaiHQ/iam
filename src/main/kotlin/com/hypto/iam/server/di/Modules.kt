@@ -61,8 +61,7 @@ import com.hypto.iam.server.utils.ApplicationIdUtil
 import com.hypto.iam.server.utils.EncryptUtil
 import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IdGenerator
-import com.hypto.iam.server.utils.ObjectPool
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import com.txman.TxMan
 import mu.KotlinLogging
 import okhttp3.ConnectionPool
@@ -85,7 +84,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.util.concurrent.TimeUnit
-import kotlin.reflect.full.primaryConstructor
 
 private val log = KotlinLogging.logger { }
 const val MAX_IDLE_CONNECTIONS = 50
@@ -140,7 +138,7 @@ val applicationModule =
         single { EncryptUtil }
         single { ApplicationIdUtil.Generator }
         single { ApplicationIdUtil.Validator }
-        single(named("PolicyValidatorPool")) { ObjectPool(MagicNumber.FIVE, PolicyValidator::class.primaryConstructor!!, true) }
+        single { PolicyValidatorPool(MagicNumber.FIVE) }
         single { AppConfig.configuration }
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class

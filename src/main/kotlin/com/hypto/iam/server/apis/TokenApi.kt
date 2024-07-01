@@ -16,10 +16,9 @@ import com.hypto.iam.server.security.TokenType
 import com.hypto.iam.server.security.UserPrincipal
 import com.hypto.iam.server.service.TokenService
 import com.hypto.iam.server.utils.ActionHrn
-import com.hypto.iam.server.utils.ObjectPool
 import com.hypto.iam.server.utils.ResourceHrn
 import com.hypto.iam.server.utils.policy.PolicyRequest
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import com.hypto.iam.server.validators.validate
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -37,7 +36,7 @@ private val tokenService: TokenService = getKoinInstance()
 private val gson: Gson = getKoinInstance()
 private val userRepo = getKoinInstance<UserRepo>()
 private val userAuthRepo = getKoinInstance<UserAuthRepo>()
-private val policyValidatorPool = getKoinInstance<ObjectPool<PolicyValidator>>("PolicyValidatorPool")
+private val policyValidatorPool = getKoinInstance<PolicyValidatorPool>()
 
 @Suppress("ThrowsCount")
 suspend fun generateToken(
@@ -78,14 +77,13 @@ suspend fun generateTokenForSubOrgEmail(
     val orgId = principal.organization
     val resourceHrn = ResourceHrn(organization = orgId, resource = "organizations", resourceInstance = orgId)
     val actionHrn = ActionHrn(organization = orgId, resource = resourceHrn.resource, action = "getSubOrgToken")
-    val policyValidator = policyValidatorPool.borrowObject()
-    checkNotNull(policyValidator) { "Failed to get Policy Validator from Object Pool" }
+    val policyValidator = policyValidatorPool.borrow()
     val permission =
         policyValidator.validate(
             principal.policies,
             PolicyRequest(principal.hrn.toString(), resourceHrn.toString(), actionHrn.toString()),
         )
-    policyValidatorPool.recycleObject(policyValidator)
+    policyValidatorPool.recycle(policyValidator)
     if (!permission) {
         throw AuthenticationException("User does not have permission to get token for sub org")
     }
