@@ -12,6 +12,7 @@ import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.util.UUID
+import com.workos.common.exceptions.BadRequestException as WorkOSBadRequestException
 import com.workos.common.exceptions.NotFoundException as WorkOSNotFoundException
 import com.workos.common.exceptions.UnauthorizedException as WorkOSUnauthorizedException
 
@@ -37,12 +38,15 @@ object WorkOSAuthProvider : BaseAuthProvider("workos"), KoinComponent {
                 this.providerName,
                 AuthMetadata(profileAndToken.profile.id),
             )
+        } catch (e: WorkOSBadRequestException) {
+            logger.error { "Bad Request - ${e.message}" }
+            throw AuthenticationException(e.message ?: "Invalid access token")
         } catch (e: WorkOSUnauthorizedException) {
             logger.error { "Unauthorized - ${e.message}" }
             throw AuthenticationException(e.message ?: "Unauthorized")
         } catch (e: WorkOSNotFoundException) {
             logger.error { "Profile not found - ${e.message}" }
-            throw EntityNotFoundException("Profile not found")
+            throw EntityNotFoundException(e.message ?: "Profile not found")
         }
     }
 }
