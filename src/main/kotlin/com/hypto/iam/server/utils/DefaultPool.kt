@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import java.util.concurrent.atomic.AtomicReferenceArray
 import kotlin.reflect.KProperty1
 
+// SOURCE: https://github.com/ktorio/ktor/blob/main/ktor-io/jvm/src/io/ktor/utils/io/pool/DefaultPool.kt
+
 private const val MULTIPLIER = 4
 
 // number of attempts to find a slot
@@ -54,6 +56,15 @@ abstract class DefaultPool<T : Any>(final override val capacity: Int) : ObjectPo
     final override fun recycle(instance: T) {
         validateInstance(instance)
         if (!tryPush(instance)) disposeInstance(instance)
+    }
+
+    fun execute(fn: (T) -> Any?): Any? {
+        val instance = borrow()
+        return try {
+            fn(instance)
+        } finally {
+            recycle(instance)
+        }
     }
 
     final override fun dispose() {

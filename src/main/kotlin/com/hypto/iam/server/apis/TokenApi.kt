@@ -77,13 +77,13 @@ suspend fun generateTokenForSubOrgEmail(
     val orgId = principal.organization
     val resourceHrn = ResourceHrn(organization = orgId, resource = "organizations", resourceInstance = orgId)
     val actionHrn = ActionHrn(organization = orgId, resource = resourceHrn.resource, action = "getSubOrgToken")
-    val policyValidator = policyValidatorPool.borrow()
     val permission =
-        policyValidator.validate(
-            principal.policies,
-            PolicyRequest(principal.hrn.toString(), resourceHrn.toString(), actionHrn.toString()),
-        )
-    policyValidatorPool.recycle(policyValidator)
+        policyValidatorPool.execute { policyValidator ->
+            policyValidator.validate(
+                principal.policies,
+                PolicyRequest(principal.hrn.toString(), resourceHrn.toString(), actionHrn.toString()),
+            )
+        } as Boolean
     if (!permission) {
         throw AuthenticationException("User does not have permission to get token for sub org")
     }

@@ -22,13 +22,13 @@ class ValidationServiceImpl : ValidationService, KoinComponent {
         val policyBuilder = principalPolicyService.fetchEntitlements(principalHrn.toString())
         val validations = validationRequest.validations
 
-        val policyValidator = policyValidatorPool.borrow()
         val results =
-            policyValidator.batchValidate(
-                policyBuilder,
-                validations.map { PolicyRequest(principalHrn.toString(), it.resource, it.action) },
-            )
-        policyValidatorPool.recycle(policyValidator)
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.batchValidate(
+                    policyBuilder,
+                    validations.map { PolicyRequest(principalHrn.toString(), it.resource, it.action) },
+                )
+            } as List<Boolean>
 
         return ValidationResponse(
             results.mapIndexed { i, isValid ->

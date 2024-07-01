@@ -167,13 +167,14 @@ class TokenServiceImpl : KoinComponent, TokenService {
                 action = "delegatePolicy",
             ).toString()
 
-        val policyValidator = policyValidatorPool.borrow()
         val hasPermissionToDelegate =
-            policyValidator.validate(
-                requesterPrincipal.policies.stream(),
-                PolicyRequest(requesterPrincipal.hrnStr, policyHrn, actionHrn),
-            )
-        policyValidatorPool.recycle(policyValidator)
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    requesterPrincipal.policies.stream(),
+                    PolicyRequest(requesterPrincipal.hrnStr, policyHrn, actionHrn),
+                )
+            } as Boolean
+
         require(hasPermissionToDelegate) {
             "User ${requesterPrincipal.hrnStr} does not have 'delegatePolicy' permission on $policyHrn"
         }

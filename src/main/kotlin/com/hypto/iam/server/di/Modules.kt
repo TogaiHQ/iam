@@ -138,7 +138,7 @@ val applicationModule =
         single { EncryptUtil }
         single { ApplicationIdUtil.Generator }
         single { ApplicationIdUtil.Validator }
-        single { PolicyValidatorPool(MagicNumber.FIVE) }
+        single { PolicyValidatorPool(MagicNumber.TWENTY) }
         single { AppConfig.configuration }
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
