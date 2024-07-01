@@ -23,6 +23,7 @@ import com.hypto.iam.server.db.repositories.SubOrganizationRepo
 import com.hypto.iam.server.db.repositories.UserAuthProvidersRepo
 import com.hypto.iam.server.db.repositories.UserAuthRepo
 import com.hypto.iam.server.db.repositories.UserRepo
+import com.hypto.iam.server.extensions.MagicNumber
 import com.hypto.iam.server.idp.CognitoIdentityProviderImpl
 import com.hypto.iam.server.idp.IdentityProvider
 import com.hypto.iam.server.service.ActionService
@@ -62,7 +63,7 @@ import com.hypto.iam.server.utils.ApplicationIdUtil
 import com.hypto.iam.server.utils.EncryptUtil
 import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IdGenerator
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import com.txman.TxMan
 import com.workos.WorkOS
 import mu.KotlinLogging
@@ -141,7 +142,7 @@ val applicationModule =
         single { EncryptUtil }
         single { ApplicationIdUtil.Generator }
         single { ApplicationIdUtil.Validator }
-        single { PolicyValidator }
+        single { PolicyValidatorPool(MagicNumber.TWENTY) }
         single { AppConfig.configuration }
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
@@ -235,5 +236,11 @@ private fun getGsonInstance(): Gson {
 inline fun <reified T> getKoinInstance(): T {
     return object : KoinComponent {
         val value: T by inject()
+    }.value
+}
+
+inline fun <reified T> getKoinInstance(named: String): T {
+    return object : KoinComponent {
+        val value: T by inject(named(named))
     }.value
 }

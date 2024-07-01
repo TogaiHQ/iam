@@ -1,11 +1,12 @@
 package com.hypto.iam.server.utils.policy
 
+import com.hypto.iam.server.utils.DefaultPool
 import org.casbin.jcasbin.main.CoreEnforcer.newModel
 import org.casbin.jcasbin.main.Enforcer
 import org.casbin.jcasbin.persist.file_adapter.FileAdapter
 import java.io.InputStream
 
-object PolicyValidator {
+class PolicyValidator {
     private val modelStream = this::class.java.getResourceAsStream("/casbin_model.conf")
     private val model = modelStream?.let { newModel(String(it.readAllBytes(), Charsets.UTF_8)) }
 
@@ -74,5 +75,11 @@ object PolicyValidator {
     ): List<Boolean> {
         val enforcer = Enforcer(model, FileAdapter(policyBuilder.stream()))
         return policyRequests.map { validate(enforcer, it) }.toList()
+    }
+}
+
+class PolicyValidatorPool(capacity: Int) : DefaultPool<PolicyValidator>(capacity) {
+    override fun produceInstance(): PolicyValidator {
+        return PolicyValidator()
     }
 }

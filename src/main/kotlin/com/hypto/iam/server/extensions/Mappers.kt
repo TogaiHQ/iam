@@ -88,6 +88,7 @@ object MagicNumber {
     const val THREE = 3
     const val FOUR = 4
     const val FIVE = 5
+    const val TWENTY = 20
 }
 
 val COMMA_REGEX = Regex("\\s*,\\s*")

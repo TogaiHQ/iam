@@ -30,7 +30,7 @@ import com.hypto.iam.server.utils.ResourceHrn
 import com.hypto.iam.server.utils.measureTimedValue
 import com.hypto.iam.server.utils.policy.PolicyBuilder
 import com.hypto.iam.server.utils.policy.PolicyRequest
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import com.hypto.iam.server.utils.policy.PolicyVariables
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.CompressionCodecs
@@ -78,7 +78,7 @@ class TokenServiceImpl : KoinComponent, TokenService {
     private val principalPolicyService: PrincipalPolicyService by inject()
     private val appConfig: AppConfig by inject()
     private val masterKeyCache: MasterKeyCache by inject()
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidatorPool: PolicyValidatorPool by inject()
     private val policiesRepo: PoliciesRepo by inject()
     private val policyService: PolicyService by inject()
 
@@ -168,10 +168,13 @@ class TokenServiceImpl : KoinComponent, TokenService {
             ).toString()
 
         val hasPermissionToDelegate =
-            policyValidator.validate(
-                requesterPrincipal.policies.stream(),
-                PolicyRequest(requesterPrincipal.hrnStr, policyHrn, actionHrn),
-            )
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    requesterPrincipal.policies.stream(),
+                    PolicyRequest(requesterPrincipal.hrnStr, policyHrn, actionHrn),
+                )
+            } as Boolean
+
         require(hasPermissionToDelegate) {
             "User ${requesterPrincipal.hrnStr} does not have 'delegatePolicy' permission on $policyHrn"
         }

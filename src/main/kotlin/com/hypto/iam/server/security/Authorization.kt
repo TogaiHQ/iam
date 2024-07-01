@@ -5,7 +5,7 @@ import com.hypto.iam.server.utils.ActionHrn
 import com.hypto.iam.server.utils.IamResources
 import com.hypto.iam.server.utils.ResourceHrn
 import com.hypto.iam.server.utils.policy.PolicyRequest
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import io.ktor.http.decodeURLPart
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.BaseApplicationPlugin
@@ -52,7 +52,7 @@ class AuthorizationException(override val message: String) : Exception(message)
 
 @Suppress("UnusedPrivateMember")
 class Authorization(config: Configuration) : KoinComponent {
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidatorPool: PolicyValidatorPool by inject()
 
     class Configuration : KoinComponent
 
@@ -106,39 +106,41 @@ class Authorization(config: Configuration) : KoinComponent {
                 )
 
             val denyReasons = mutableListOf<String>()
-            all?.let {
-                val policyRequests =
-                    all.map {
-                        val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
-                        PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
-                    }.toList()
-                if (!policyValidator.validate(policies.stream(), policyRequests)) {
-                    denyReasons += "Principal $principalHrn lacks one or more permission(s) -" +
-                        "  ${policyRequests.joinToString { it.action }}"
+            policyValidatorPool.execute { policyValidator ->
+                all?.let {
+                    val policyRequests =
+                        all.map {
+                            val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
+                            PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
+                        }.toList()
+                    if (!policyValidator.validate(policies.stream(), policyRequests)) {
+                        denyReasons += "Principal $principalHrn lacks one or more permission(s) -" +
+                            "  ${policyRequests.joinToString { it.action }}"
+                    }
                 }
-            }
 
-            any?.let {
-                val policyRequests =
-                    any.map {
-                        val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
-                        PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
-                    }.toList()
-                if (!policyValidator.validateAny(policies.stream(), policyRequests)) {
-                    denyReasons += "Principal $principalHrn has none of the permission(s) -" +
-                        "  ${policyRequests.joinToString { it.action }}"
+                any?.let {
+                    val policyRequests =
+                        any.map {
+                            val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
+                            PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
+                        }.toList()
+                    if (!policyValidator.validateAny(policies.stream(), policyRequests)) {
+                        denyReasons += "Principal $principalHrn has none of the permission(s) -" +
+                            "  ${policyRequests.joinToString { it.action }}"
+                    }
                 }
-            }
 
-            none?.let {
-                val policyRequests =
-                    none.map {
-                        val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
-                        PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
-                    }.toList()
-                if (!policyValidator.validateNone(policies.stream(), policyRequests)) {
-                    denyReasons += "Principal $principalHrn shouldn't have these permission(s) -" +
-                        "  ${policyRequests.joinToString { it.action }}"
+                none?.let {
+                    val policyRequests =
+                        none.map {
+                            val actionHrn = ActionHrn(resourceHrn.organization, null, resourceHrn.resource, it)
+                            PolicyRequest(principalHrn.toString(), resourceHrn.toString(), actionHrn.toString())
+                        }.toList()
+                    if (!policyValidator.validateNone(policies.stream(), policyRequests)) {
+                        denyReasons += "Principal $principalHrn shouldn't have these permission(s) -" +
+                            "  ${policyRequests.joinToString { it.action }}"
+                    }
                 }
             }
 

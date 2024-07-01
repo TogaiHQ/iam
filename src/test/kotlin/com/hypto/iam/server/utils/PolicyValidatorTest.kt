@@ -5,11 +5,14 @@ import com.hypto.iam.server.helpers.DataSetupHelper
 import com.hypto.iam.server.models.PolicyStatement
 import com.hypto.iam.server.utils.policy.PolicyBuilder
 import com.hypto.iam.server.utils.policy.PolicyRequest
-import com.hypto.iam.server.utils.policy.PolicyValidator
+import com.hypto.iam.server.utils.policy.PolicyValidatorPool
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import org.koin.core.component.inject
 
 class PolicyValidatorTest : AbstractContainerBaseTest() {
+    private val policyValidatorPool: PolicyValidatorPool by inject()
+
     @Test
     fun `Test policy- allow and deny for same permission, outcome- deny`() {
         val policyHrn = ResourceHrn("orgId", "alice", IamResources.POLICY, "policy1")
@@ -20,10 +23,12 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(resourceHrn, actionHrn, PolicyStatement.Effect.allow))
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -39,10 +44,12 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(anyResourceHrn, actionHrn, PolicyStatement.Effect.deny))
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -58,10 +65,12 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(anyResourceHrn, actionHrn, PolicyStatement.Effect.allow))
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -79,10 +88,12 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(resourceHrn2, actionHrn2, PolicyStatement.Effect.allow))
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn2.toString(), resourceHrn3, actionHrn3.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn2.toString(), resourceHrn3, actionHrn3.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -99,10 +110,12 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(resourceHrn2, actionHrn2, PolicyStatement.Effect.allow))
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn2, actionHrn2.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn2, actionHrn2.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -118,24 +131,30 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(anyResourceHrn, actionHrn, PolicyStatement.Effect.allow))
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn1.replace(".*", "*"), actionHrn1.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn1.replace(".*", "*"), actionHrn1.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn2.replace(".*", "*"), actionHrn2.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn2.replace(".*", "*"), actionHrn2.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn3.replace(".*", "*"), actionHrn3.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn3.replace(".*", "*"), actionHrn3.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -192,31 +211,39 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(anyResourceInstanceHrn, actionHrn, PolicyStatement.Effect.allow))
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceInstanceHrn1, actionHrn1.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceInstanceHrn1, actionHrn1.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceInstanceHrn2, actionHrn2.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceInstanceHrn2, actionHrn2.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceInstanceHrn3, actionHrn3.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceInstanceHrn3, actionHrn3.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceInstanceHrn4, actionHrn4.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceInstanceHrn4, actionHrn4.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -232,24 +259,30 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
         val resourceHrnTest = ResourceHrn("orgId", "alice", "data1", "data1instance").toString()
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn2.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn2.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn3.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrnTest, actionHrn3.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 
@@ -266,31 +299,39 @@ class PolicyValidatorTest : AbstractContainerBaseTest() {
                 .withStatement(PolicyStatement(resourceHrn, actionHrn, PolicyStatement.Effect.allow))
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn1.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn1.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn2.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn2.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertTrue(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn3.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn3.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
 
         Assertions.assertFalse(
-            PolicyValidator.validate(
-                policy.stream(),
-                PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn4.replace("\\$", "$")),
-            ),
+            policyValidatorPool.execute { policyValidator ->
+                policyValidator.validate(
+                    policy.stream(),
+                    PolicyRequest(policyHrn.toString(), resourceHrn, actionHrn4.replace("\\$", "$")),
+                )
+            } as Boolean,
         )
     }
 }
