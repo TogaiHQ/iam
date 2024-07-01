@@ -6,12 +6,26 @@ import com.hypto.iam.server.models.PolicyStatement
 import com.hypto.iam.server.utils.policy.PolicyBuilder
 import com.hypto.iam.server.utils.policy.PolicyRequest
 import com.hypto.iam.server.utils.policy.PolicyValidator
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 
 class PolicyValidatorTest : AbstractContainerBaseTest() {
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidatorPool: ObjectPool<PolicyValidator> by inject(named("PolicyValidatorPool"))
+    private lateinit var policyValidator: PolicyValidator
+
+    @BeforeEach
+    fun initializePolicyValidator() {
+        policyValidator = checkNotNull(policyValidatorPool.borrowObject()) { "Failed to get Policy Validator from Object Pool" }
+    }
+
+    @AfterEach
+    fun recyclePolicyValidator() {
+        policyValidatorPool.recycleObject(policyValidator)
+    }
 
     @Test
     fun `Test policy- allow and deny for same permission, outcome- deny`() {

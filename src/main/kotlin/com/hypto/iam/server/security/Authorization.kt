@@ -3,6 +3,7 @@ package com.hypto.iam.server.security
 import com.hypto.iam.server.extensions.RouteOption
 import com.hypto.iam.server.utils.ActionHrn
 import com.hypto.iam.server.utils.IamResources
+import com.hypto.iam.server.utils.ObjectPool
 import com.hypto.iam.server.utils.ResourceHrn
 import com.hypto.iam.server.utils.policy.PolicyRequest
 import com.hypto.iam.server.utils.policy.PolicyValidator
@@ -24,6 +25,7 @@ import io.ktor.util.pipeline.PipelinePhase
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 
 // Authorization logic is defined based on - https://www.ximedes.com/2020-09-17/role-based-authorization-in-ktor/
 
@@ -52,7 +54,7 @@ class AuthorizationException(override val message: String) : Exception(message)
 
 @Suppress("UnusedPrivateMember")
 class Authorization(config: Configuration) : KoinComponent {
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidatorPool: ObjectPool<PolicyValidator> by inject(named("PolicyValidatorPool"))
 
     class Configuration : KoinComponent
 
@@ -106,6 +108,8 @@ class Authorization(config: Configuration) : KoinComponent {
                 )
 
             val denyReasons = mutableListOf<String>()
+            val policyValidator = policyValidatorPool.borrowObject()
+            checkNotNull(policyValidator) { "Failed to get Policy Validator from Object Pool" }
             all?.let {
                 val policyRequests =
                     all.map {
@@ -141,6 +145,7 @@ class Authorization(config: Configuration) : KoinComponent {
                         "  ${policyRequests.joinToString { it.action }}"
                 }
             }
+            policyValidatorPool.recycleObject(policyValidator)
 
             if (denyReasons.isNotEmpty()) {
                 val message = denyReasons.joinToString(". ")

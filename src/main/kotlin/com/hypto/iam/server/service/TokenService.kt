@@ -26,6 +26,7 @@ import com.hypto.iam.server.utils.ActionHrn
 import com.hypto.iam.server.utils.Hrn
 import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IamResources.POLICY
+import com.hypto.iam.server.utils.ObjectPool
 import com.hypto.iam.server.utils.ResourceHrn
 import com.hypto.iam.server.utils.measureTimedValue
 import com.hypto.iam.server.utils.policy.PolicyBuilder
@@ -43,6 +44,7 @@ import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.PublicKey
@@ -78,7 +80,7 @@ class TokenServiceImpl : KoinComponent, TokenService {
     private val principalPolicyService: PrincipalPolicyService by inject()
     private val appConfig: AppConfig by inject()
     private val masterKeyCache: MasterKeyCache by inject()
-    private val policyValidator: PolicyValidator by inject()
+    private val policyValidatorPool: ObjectPool<PolicyValidator> by inject(named("PolicyValidatorPool"))
     private val policiesRepo: PoliciesRepo by inject()
     private val policyService: PolicyService by inject()
 
@@ -167,11 +169,14 @@ class TokenServiceImpl : KoinComponent, TokenService {
                 action = "delegatePolicy",
             ).toString()
 
+        val policyValidator = policyValidatorPool.borrowObject()
+        checkNotNull(policyValidator) { "Failed to get Policy Validator from Object Pool" }
         val hasPermissionToDelegate =
             policyValidator.validate(
                 requesterPrincipal.policies.stream(),
                 PolicyRequest(requesterPrincipal.hrnStr, policyHrn, actionHrn),
             )
+        policyValidatorPool.recycleObject(policyValidator)
         require(hasPermissionToDelegate) {
             "User ${requesterPrincipal.hrnStr} does not have 'delegatePolicy' permission on $policyHrn"
         }

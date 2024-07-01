@@ -23,6 +23,7 @@ import com.hypto.iam.server.db.repositories.SubOrganizationRepo
 import com.hypto.iam.server.db.repositories.UserAuthProvidersRepo
 import com.hypto.iam.server.db.repositories.UserAuthRepo
 import com.hypto.iam.server.db.repositories.UserRepo
+import com.hypto.iam.server.extensions.MagicNumber
 import com.hypto.iam.server.idp.CognitoIdentityProviderImpl
 import com.hypto.iam.server.idp.IdentityProvider
 import com.hypto.iam.server.service.ActionService
@@ -60,6 +61,7 @@ import com.hypto.iam.server.utils.ApplicationIdUtil
 import com.hypto.iam.server.utils.EncryptUtil
 import com.hypto.iam.server.utils.HrnFactory
 import com.hypto.iam.server.utils.IdGenerator
+import com.hypto.iam.server.utils.ObjectPool
 import com.hypto.iam.server.utils.policy.PolicyValidator
 import com.txman.TxMan
 import mu.KotlinLogging
@@ -83,6 +85,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.full.primaryConstructor
 
 private val log = KotlinLogging.logger { }
 const val MAX_IDLE_CONNECTIONS = 50
@@ -137,7 +140,7 @@ val applicationModule =
         single { EncryptUtil }
         single { ApplicationIdUtil.Generator }
         single { ApplicationIdUtil.Validator }
-        single { PolicyValidator }
+        single(named("PolicyValidatorPool")) { ObjectPool(MagicNumber.FIVE, PolicyValidator::class.primaryConstructor!!, true) }
         single { AppConfig.configuration }
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
@@ -230,5 +233,11 @@ private fun getGsonInstance(): Gson {
 inline fun <reified T> getKoinInstance(): T {
     return object : KoinComponent {
         val value: T by inject()
+    }.value
+}
+
+inline fun <reified T> getKoinInstance(named: String): T {
+    return object : KoinComponent {
+        val value: T by inject(named(named))
     }.value
 }
