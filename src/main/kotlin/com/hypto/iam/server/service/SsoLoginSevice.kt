@@ -38,7 +38,13 @@ class SsoLoginServiceImpl : SsoLoginService, KoinComponent {
             if (connections.data.isEmpty() || connections.data[0].state != ConnectionState.Active) {
                 throw WorkOSBadRequestException("SSO not configured for ${ssoLoginRequest.domain}. Please contact administrator.", null, null, UUID.randomUUID().toString())
             }
-            val url = workos.sso.getAuthorizationUrl(appConfig.workOS.clientId, ssoLoginRequest.redirectUri).connection(connections.data[0].id).state(WORKOS_STATE).build()
+            val url =
+                workos.sso
+                    .getAuthorizationUrl(appConfig.workOS.clientId, ssoLoginRequest.redirectUri)
+                    .connection(connections.data[0].id)
+                    .state(WORKOS_STATE)
+                    .loginHint(ssoLoginRequest.email)
+                    .build()
             AuthUrlResponse(url)
         } catch (e: WorkOSUnauthorizedException) {
             logger.error { "Unauthorized - ${e.message}" }
