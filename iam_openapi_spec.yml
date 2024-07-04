@@ -3521,6 +3521,7 @@ components:
       value:
         domain: email.com
         redirectUri: https://staging-dashboard.togai.dev/login
+        email: email@example.com
 
   schemas:
     # Requests
@@ -4677,12 +4678,16 @@ components:
       required:
         - domain
         - redirectUri
+        - email
       properties:
         domain:
           description: Domain of the user's organization
           type: string
         redirectUri:
           description: callback url for generating authentication url
+          type: string
+        email:
+          description: email of the user
           type: string
 
 externalDocs:

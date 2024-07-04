@@ -633,6 +633,9 @@ val ssoLoginRequest =
     Validation {
         SsoLoginRequest::domain required {}
         SsoLoginRequest::redirectUri required {}
+        SsoLoginRequest::email required {
+            run(emailCheck)
+        }
     }
 
 @Suppress("MagicNumber")
