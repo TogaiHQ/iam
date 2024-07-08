@@ -181,11 +181,7 @@ val applicationModule =
 fun getCognitoIdentityProviderClient(
     region: String,
     credentialsProvider: AwsCredentialsProvider,
-): CognitoIdentityProviderClient {
-    logger.info { credentialsProvider.identityType() }
-    logger.info { credentialsProvider.toString() }
-    return CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
-}
+): CognitoIdentityProviderClient = CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
 
 fun getSesClient(
     region: String,
@@ -201,7 +197,9 @@ fun getCredentialsProvider(
             WebIdentityTokenFileCredentialsProvider.create(),
             StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)),
         )
-    return AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
+    val credentialsProvider = AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
+    logger.info { "Identity type: " + credentialsProvider.identityType()  }
+    return credentialsProvider
 }
 
 private fun getGsonInstance(): Gson {
