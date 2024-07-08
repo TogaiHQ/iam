@@ -112,7 +112,7 @@ data class AppConfig(
     // Get NewRelic licence key from https://one.newrelic.com/admin-portal/api-keys/home
     data class Newrelic(val apiKey: String, val publishInterval: Long)
 
-    data class Aws(val region: String, val accessKey: String, val secretKey: String)
+    data class Aws(val region: String, val accessKey: String, val secretKey: String, val webIdentityTokenFile: String)
 
     data class PostHook(val signup: String)
 

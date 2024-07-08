@@ -48,7 +48,8 @@
   "aws": {
     "region": "us-east-1",
     "accessKey": "<placeholder for aws access key>",
-    "secretKey": "<placeholder for aws secret key>"
+    "secretKey": "<placeholder for aws secret key>",
+    "webIdentityTokenFile": "<placeholder for webIdentityTokenFile>"
   },
   "postHook": {
     "signup": "http://posthook.com/signup"

@@ -77,7 +77,9 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient
 import software.amazon.awssdk.services.ses.SesClient
@@ -87,6 +89,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.Path
 
 private val log = KotlinLogging.logger { }
 const val MAX_IDLE_CONNECTIONS = 50
@@ -148,6 +151,7 @@ val applicationModule =
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
         single {
             getCredentialsProvider(
+                get<AppConfig>().aws.webIdentityTokenFile,
                 get<AppConfig>().aws.accessKey,
                 get<AppConfig>().aws.secretKey,
             )
@@ -187,10 +191,17 @@ fun getSesClient(
 ): SesClient = SesClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
 
 fun getCredentialsProvider(
+    webIdentityTokenFile: String,
     accessKey: String,
     secretKey: String,
-): StaticCredentialsProvider =
-    StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
+): AwsCredentialsProvider {
+    val credentialsProviderBuilder: List<AwsCredentialsProvider> = listOf()
+
+    credentialsProviderBuilder.plus(WebIdentityTokenFileCredentialsProvider.builder().webIdentityTokenFile(Path(webIdentityTokenFile)).build())
+    credentialsProviderBuilder.plus(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
+
+    return AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
+}
 
 private fun getGsonInstance(): Gson {
     val isoDateTimeFormatter =
