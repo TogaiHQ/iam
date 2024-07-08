@@ -26,6 +26,7 @@ import com.hypto.iam.server.db.repositories.UserRepo
 import com.hypto.iam.server.extensions.MagicNumber
 import com.hypto.iam.server.idp.CognitoIdentityProviderImpl
 import com.hypto.iam.server.idp.IdentityProvider
+import com.hypto.iam.server.logger
 import com.hypto.iam.server.service.ActionService
 import com.hypto.iam.server.service.ActionServiceImpl
 import com.hypto.iam.server.service.AuthProviderService
@@ -89,7 +90,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
 import java.time.temporal.ChronoField
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.Path
 
 private val log = KotlinLogging.logger { }
 const val MAX_IDLE_CONNECTIONS = 50
@@ -151,7 +151,6 @@ val applicationModule =
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
         single {
             getCredentialsProvider(
-                get<AppConfig>().aws.webIdentityTokenFile,
                 get<AppConfig>().aws.accessKey,
                 get<AppConfig>().aws.secretKey,
             )
@@ -182,8 +181,11 @@ val applicationModule =
 fun getCognitoIdentityProviderClient(
     region: String,
     credentialsProvider: AwsCredentialsProvider,
-): CognitoIdentityProviderClient =
-    CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
+): CognitoIdentityProviderClient {
+    logger.info { credentialsProvider.identityType() }
+    logger.info { credentialsProvider.toString() }
+    return CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
+}
 
 fun getSesClient(
     region: String,
@@ -191,13 +193,12 @@ fun getSesClient(
 ): SesClient = SesClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
 
 fun getCredentialsProvider(
-    webIdentityTokenFile: String,
     accessKey: String,
     secretKey: String,
 ): AwsCredentialsProvider {
     val credentialsProviderBuilder =
         listOf(
-            WebIdentityTokenFileCredentialsProvider.builder().webIdentityTokenFile(Path(webIdentityTokenFile)).build(),
+            WebIdentityTokenFileCredentialsProvider.create(),
             StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)),
         )
     return AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
