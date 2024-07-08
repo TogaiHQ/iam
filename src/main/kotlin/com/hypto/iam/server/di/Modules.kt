@@ -195,10 +195,11 @@ fun getCredentialsProvider(
     accessKey: String,
     secretKey: String,
 ): AwsCredentialsProvider {
-    val credentialsProviderBuilder = listOf(
-        WebIdentityTokenFileCredentialsProvider.builder().webIdentityTokenFile(Path(webIdentityTokenFile)).build(),
-        StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
-    )
+    val credentialsProviderBuilder =
+        listOf(
+            WebIdentityTokenFileCredentialsProvider.builder().webIdentityTokenFile(Path(webIdentityTokenFile)).build(),
+            StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)),
+        )
     return AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
 }
 
