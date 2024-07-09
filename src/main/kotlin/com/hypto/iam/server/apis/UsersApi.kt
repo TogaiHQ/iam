@@ -102,7 +102,6 @@ fun Route.createUsersApi() {
                     VerifyEmailRequest.Purpose.invite,
                     organizationId = organizationId,
                 ) ?: throw AuthenticationException("Invalid passcode")
-            require(passcode.email == request.email) { "Email in passcode does not match email in request" }
             verified = true
             loginAccess = true
             policies = InviteMetadata(passcodeService.decryptMetadata(passcode.metadata!!)).policies
@@ -118,6 +117,7 @@ fun Route.createUsersApi() {
                 authMetadata = oAuthUserPrincipal.metadata
                 issuer = it
             }
+            require(passcode.email == email) { "Email in passcode does not match email in request" }
         }
 
         val username = idGenerator.username()
