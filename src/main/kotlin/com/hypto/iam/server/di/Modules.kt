@@ -174,7 +174,8 @@ val applicationModule =
 fun getCognitoIdentityProviderClient(
     region: String,
     credentialsProvider: AwsCredentialsProvider,
-): CognitoIdentityProviderClient = CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
+): CognitoIdentityProviderClient =
+    CognitoIdentityProviderClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
 
 fun getSesClient(
     region: String,
