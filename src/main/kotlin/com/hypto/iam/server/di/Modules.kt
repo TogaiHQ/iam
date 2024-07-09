@@ -75,9 +75,8 @@ import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient
 import software.amazon.awssdk.services.ses.SesClient
@@ -147,10 +146,7 @@ val applicationModule =
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
         single {
-            getCredentialsProvider(
-                get<AppConfig>().aws.accessKey,
-                get<AppConfig>().aws.secretKey,
-            )
+            DefaultCredentialsProvider.create()
         } bind AwsCredentialsProvider::class
         single { getCognitoIdentityProviderClient(get<AppConfig>().aws.region, get()) }
         single { getSesClient(get<AppConfig>().aws.region, get()) }
@@ -185,12 +181,6 @@ fun getSesClient(
     region: String,
     credentialsProvider: AwsCredentialsProvider,
 ): SesClient = SesClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
-
-fun getCredentialsProvider(
-    accessKey: String,
-    secretKey: String,
-): StaticCredentialsProvider =
-    StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
 
 private fun getGsonInstance(): Gson {
     val isoDateTimeFormatter =

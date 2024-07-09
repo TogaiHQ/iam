@@ -407,6 +407,7 @@ dependencies {
 
     // AWS
     implementation platform('software.amazon.awssdk:bom:2.25.20')
+    implementation("software.amazon.awssdk:sts")
     implementation("software.amazon.awssdk:cognitoidentity")
     implementation("software.amazon.awssdk:cognitoidentityprovider")
     implementation("software.amazon.awssdk:ses")

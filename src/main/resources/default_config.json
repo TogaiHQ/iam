@@ -46,9 +46,7 @@
     "unique_users_across_organizations": false
   },
   "aws": {
-    "region": "us-east-1",
-    "accessKey": "<placeholder for aws access key>",
-    "secretKey": "<placeholder for aws secret key>"
+    "region": "us-east-1"
   },
   "postHook": {
     "signup": "http://posthook.com/signup"
