@@ -26,7 +26,6 @@ import com.hypto.iam.server.db.repositories.UserRepo
 import com.hypto.iam.server.extensions.MagicNumber
 import com.hypto.iam.server.idp.CognitoIdentityProviderImpl
 import com.hypto.iam.server.idp.IdentityProvider
-import com.hypto.iam.server.logger
 import com.hypto.iam.server.service.ActionService
 import com.hypto.iam.server.service.ActionServiceImpl
 import com.hypto.iam.server.service.AuthProviderService
@@ -76,11 +75,8 @@ import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient
 import software.amazon.awssdk.services.ses.SesClient
@@ -150,10 +146,7 @@ val applicationModule =
         single { MasterKeyCache }
         single { CognitoIdentityProviderImpl() } bind IdentityProvider::class
         single {
-            getCredentialsProvider(
-                get<AppConfig>().aws.accessKey,
-                get<AppConfig>().aws.secretKey,
-            )
+            DefaultCredentialsProvider.create()
         } bind AwsCredentialsProvider::class
         single { getCognitoIdentityProviderClient(get<AppConfig>().aws.region, get()) }
         single { getSesClient(get<AppConfig>().aws.region, get()) }
@@ -187,20 +180,6 @@ fun getSesClient(
     region: String,
     credentialsProvider: AwsCredentialsProvider,
 ): SesClient = SesClient.builder().region(Region.of(region)).credentialsProvider(credentialsProvider).build()
-
-fun getCredentialsProvider(
-    accessKey: String,
-    secretKey: String,
-): AwsCredentialsProvider {
-    val credentialsProviderBuilder =
-        listOf(
-            WebIdentityTokenFileCredentialsProvider.create(),
-            StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)),
-        )
-    val credentialsProvider = AwsCredentialsProviderChain.builder().credentialsProviders(credentialsProviderBuilder).build()
-    logger.info { "Identity type: " + credentialsProvider.identityType()  }
-    return credentialsProvider
-}
 
 private fun getGsonInstance(): Gson {
     val isoDateTimeFormatter =
